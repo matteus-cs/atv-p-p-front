@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Assinaturas - Cliente</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* Define a fonte Inter como padrão para o corpo */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Container principal da aplicação -->
+    <div id="app-container" class="w-full max-w-4xl mx-auto">
+
+        <!-- Seção de Login -->
+        <div id="login-section" class="bg-white p-8 rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-auto">
+            <h2 class="text-3xl font-extrabold text-center text-gray-800 mb-6">
+                <span role="img" aria-label="Lock icon" class="mr-2">🔒</span>
+                Login do Cliente
+            </h2>
+            <p class="text-gray-600 text-center mb-6">Entre com seu CPF para visualizar suas assinaturas.</p>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="cpf-input" class="block text-sm font-medium text-gray-700 mb-1">
+                        CPF
+                    </label>
+                    <input
+                        type="text"
+                        id="cpf-input"
+                        name="cpf"
+                        placeholder="Ex: 123.456.789-00"
+                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        required
+                    />
+                </div>
+                <button
+                    type="submit"
+                    id="login-button"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Entrar
+                </button>
+                <p id="login-error" class="mt-4 text-center text-red-600 text-sm font-medium hidden"></p>
+            </form>
+        </div>
+
+        <!-- Seção do Dashboard (inicialmente oculta) -->
+        <div id="dashboard-section" class="hidden bg-white p-8 rounded-lg shadow-xl border border-gray-200 w-full">
+            <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
+                <h1 class="text-3xl font-extrabold text-gray-800">
+                    <span role="img" aria-label="Clipboard icon" class="mr-2">📋</span>
+                    Minhas Assinaturas
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <span id="user-cpf-display" class="text-md text-gray-600 font-medium"></span>
+                    <button
+                        id="logout-button"
+                        class="px-4 py-2 bg-red-600 text-white rounded-md shadow-md hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-sm"
+                    >
+                        Sair
+                    </button>
+                </div>
+            </div>
+
+            <!-- Indicadores de carregamento e erro -->
+            <p id="loading-indicator" class="text-center text-indigo-600 text-lg my-6 hidden">
+                <span class="animate-spin inline-block mr-2">⚙️</span>
+                Carregando...
+            </p>
+            <div id="dashboard-error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6 hidden" role="alert">
+                <strong class="font-bold">Erro:</strong>
+                <span id="dashboard-error-message" class="block sm:inline ml-2"></span>
+            </div>
+
+            <!-- Conteúdo do Dashboard -->
+            <div id="dashboard-content">
+                <!-- Detalhes de Pagamento (inicialmente oculto) -->
+                <div id="payment-details-section" class="bg-blue-50 p-6 rounded-lg shadow-md mb-8 border border-blue-200 hidden">
+                    <button id="back-to-payments-button" class="mb-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-300 ease-in-out text-sm">
+                        &larr; Voltar aos Pagamentos
+                    </button>
+                    <h3 class="text-xl font-bold text-blue-800 mb-4">Detalhes do Pagamento</h3>
+                    <p class="text-gray-700 mb-2">
+                        <strong class="font-semibold">UUID do Pagamento:</strong> <span id="payment-uuid"></span>
+                    </p>
+                    <p class="text-gray-700 mb-2">
+                        <strong class="font-semibold">Valor:</strong> R$ <span id="payment-amount"></span>
+                    </p>
+                    <p class="text-gray-700 mb-2">
+                        <strong class="font-semibold">Status:</strong> <span id="payment-status" class="font-bold"></span>
+                    </p>
+                    <p id="payment-date-row" class="text-gray-700 mb-2 hidden">
+                        <strong class="font-semibold">Data de Pagamento:</strong> <span id="payment-date"></span>
+                    </p>
+                    <p id="payment-gateway-charge-id-row" class="text-gray-700 mb-4 hidden">
+                        <strong class="font-semibold">ID da Cobrança:</strong> <span id="payment-gateway-charge-id"></span>
+                    </p>
+
+                    <!-- Detalhes da Cobrança (inicialmente oculto) -->
+                    <div id="charge-details-section" class="mt-6 p-5 bg-white rounded-lg shadow-inner border border-gray-100 hidden">
+                        <h4 class="text-lg font-bold text-gray-700 mb-3">Detalhes da Cobrança</h4>
+                        <div id="charge-details-content" class="space-y-2">
+                            <!-- Conteúdo dos detalhes da cobrança será injetado aqui -->
+                        </div>
+                        <p id="no-charge-details-message" class="text-gray-500 hidden">Nenhum detalhe de cobrança específico disponível para este método.</p>
+                    </div>
+                </div>
+
+                <!-- Detalhes da Assinatura e Pagamentos (inicialmente oculto) -->
+                <div id="signature-details-section" class="bg-green-50 p-6 rounded-lg shadow-md mb-8 border border-green-200 hidden">
+                    <button id="back-to-signatures-button" class="mb-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-300 ease-in-out text-sm">
+                        &larr; Voltar às Assinaturas
+                    </button>
+                    <h3 class="text-xl font-bold text-green-800 mb-4">Detalhes da Assinatura</h3>
+                    <p class="text-gray-700 mb-2">
+                        <strong class="font-semibold">Plano:</strong> <span id="signature-plan-name"></span> (R$ <span id="signature-plan-price"></span>/mês)
+                    </p>
+                    <p class="text-gray-700 mb-2">
+                        <strong class="font-semibold">Descrição:</strong> <span id="signature-plan-description"></span>
+                    </p>
+                    <p class="text-gray-700 mb-2">
+                        <strong class="font-semibold">Status:</strong> <span id="signature-status" class="font-bold"></span>
+                    </p>
+                    <p class="text-gray-700 mb-2">
+                        <strong class="font-semibold">Início:</strong> <span id="signature-start-date"></span>
+                    </p>
+                    <p class="text-gray-700 mb-4">
+                        <strong class="font-semibold">Fim:</strong> <span id="signature-end-date"></span>
+                    </p>
+
+                    <h4 class="text-lg font-bold text-gray-700 mb-3 border-t pt-4 mt-4">Pagamentos desta Assinatura</h4>
+                    <ul id="payments-list" class="space-y-3">
+                        <!-- Pagamentos serão injetados aqui -->
+                    </ul>
+                    <p id="no-payments-message" class="text-gray-500 hidden">Nenhum pagamento encontrado para esta assinatura.</p>
+                </div>
+
+                <!-- Lista de Assinaturas (inicialmente visível após login) -->
+                <div id="signatures-list-section" class="hidden">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4">Suas Assinaturas Ativas e Inativas</h3>
+                    <ul id="signatures-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Assinaturas serão injetadas aqui -->
+                    </ul>
+                    <div id="no-signatures-message" class="text-center py-10 hidden">
+                        <p class="text-gray-500 text-lg mb-4">
+                            Nenhuma assinatura encontrada.
+                        </p>
+                        <button id="refresh-signatures-button" class="px-6 py-3 bg-indigo-600 text-white rounded-md shadow-lg hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 font-semibold">
+                            Atualizar Assinaturas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://signature-a6ddgvfygvh9ejg4.canadacentral-01.azurewebsites.net/api';
+
+        // Elementos do DOM
+        const loginSection = document.getElementById('login-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const loginForm = document.getElementById('login-form');
+        const cpfInput = document.getElementById('cpf-input');
+        const loginButton = document.getElementById('login-button');
+        const loginError = document.getElementById('login-error');
+        const logoutButton = document.getElementById('logout-button');
+        const userCpfDisplay = document.getElementById('user-cpf-display');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const dashboardError = document.getElementById('dashboard-error');
+        const dashboardErrorMessage = document.getElementById('dashboard-error-message');
+
+        const signaturesListSection = document.getElementById('signatures-list-section');
+        const signaturesList = document.getElementById('signatures-list');
+        const noSignaturesMessage = document.getElementById('no-signatures-message');
+        const refreshSignaturesButton = document.getElementById('refresh-signatures-button');
+
+        const signatureDetailsSection = document.getElementById('signature-details-section');
+        const backToSignaturesButton = document.getElementById('back-to-signatures-button');
+        const signaturePlanName = document.getElementById('signature-plan-name');
+        const signaturePlanPrice = document.getElementById('signature-plan-price');
+        const signaturePlanDescription = document.getElementById('signature-plan-description');
+        const signatureStatus = document.getElementById('signature-status');
+        const signatureStartDate = document.getElementById('signature-start-date');
+        const signatureEndDate = document.getElementById('signature-end-date');
+        const paymentsList = document.getElementById('payments-list');
+        const noPaymentsMessage = document.getElementById('no-payments-message');
+
+        const paymentDetailsSection = document.getElementById('payment-details-section');
+        const backToPaymentsButton = document.getElementById('back-to-payments-button');
+        const paymentUuid = document.getElementById('payment-uuid');
+        const paymentAmount = document.getElementById('payment-amount');
+        const paymentStatus = document.getElementById('payment-status');
+        const paymentDateRow = document.getElementById('payment-date-row');
+        const paymentDate = document.getElementById('payment-date');
+        const paymentGatewayChargeIdRow = document.getElementById('payment-gateway-charge-id-row');
+        const paymentGatewayChargeId = document.getElementById('payment-gateway-charge-id');
+        const chargeDetailsSection = document.getElementById('charge-details-section');
+        const chargeDetailsContent = document.getElementById('charge-details-content');
+        const noChargeDetailsMessage = document.getElementById('no-charge-details-message');
+
+        // Estado da aplicação
+        let appState = {
+            isLoggedIn: false,
+            token: localStorage.getItem('authToken') || '',
+            userCPF: localStorage.getItem('userCPF') || '',
+            signatures: [],
+            selectedSignature: null,
+            payments: [],
+            selectedPayment: null,
+            chargeDetails: null,
+            loading: false,
+            error: ''
+        };
+
+        /**
+         * Atualiza a visibilidade das seções com base no estado de login.
+         */
+        function updateUIVisibility() {
+            if (appState.isLoggedIn) {
+                loginSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+                userCpfDisplay.textContent = `Olá, ${appState.userCPF}`;
+            } else {
+                loginSection.classList.remove('hidden');
+                dashboardSection.classList.add('hidden');
+                // Limpa o estado e esconde tudo no dashboard ao deslogar
+                hideAllDashboardSections();
+            }
+        }
+
+        /**
+         * Exibe ou oculta o indicador de carregamento.
+         * @param {boolean} show - Se deve exibir (true) ou ocultar (false).
+         */
+        function showLoading(show) {
+            if (show) {
+                loadingIndicator.classList.remove('hidden');
+            } else {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Exibe ou oculta mensagens de erro.
+         * @param {string} message - A mensagem de erro. Se vazia, oculta o erro.
+         */
+        function showError(message) {
+            if (message) {
+                dashboardError.classList.remove('hidden');
+                dashboardErrorMessage.textContent = message;
+            } else {
+                dashboardError.classList.add('hidden');
+                dashboardErrorMessage.textContent = '';
+            }
+        }
+
+        /**
+         * Oculta todas as seções de detalhes do dashboard para resetar a visualização.
+         */
+        function hideAllDashboardSections() {
+            signaturesListSection.classList.add('hidden');
+            signatureDetailsSection.classList.add('hidden');
+            paymentDetailsSection.classList.add('hidden');
+            noSignaturesMessage.classList.add('hidden');
+        }
+
+        /**
+         * Renderiza a lista de assinaturas.
+         */
+        function renderSignatures() {
+            hideAllDashboardSections();
+            signaturesListSection.classList.remove('hidden');
+            signaturesList.innerHTML = ''; // Limpa a lista existente
+
+            if (appState.signatures.length === 0) {
+                noSignaturesMessage.classList.remove('hidden');
+                return;
+            } else {
+                noSignaturesMessage.classList.add('hidden');
+            }
+
+            appState.signatures.forEach(sig => {
+                const li = document.createElement('li');
+                li.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg cursor-pointer transition duration-300 ease-in-out transform hover:scale-[1.02]';
+                li.innerHTML = `
+                    <h4 class="text-xl font-bold text-indigo-700 mb-2">${sig.plan.name}</h4>
+                    <p class="text-gray-600 mb-3">${sig.plan.description || 'Nenhuma descrição disponível.'}</p>
+                    <div class="flex justify-between items-center text-sm text-gray-700">
+                        <div>
+                            <p>Valor Mensal: <strong class="font-semibold">R$ ${sig.plan.monthlyPrice.toFixed(2)}</strong></p>
+                            <p>Vencimento: Dia <strong class="font-semibold">${sig.dueDate}</strong></p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${sig.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${sig.isActive ? 'Ativa' : 'Inativa'}
+                        </span>
+                    </div>
+                `;
+                li.addEventListener('click', () => handleSelectSignature(sig));
+                signaturesList.appendChild(li);
+            });
+        }
+
+        /**
+         * Renderiza os detalhes de uma assinatura e seus pagamentos.
+         */
+        function renderSignatureDetails() {
+            hideAllDashboardSections();
+            signatureDetailsSection.classList.remove('hidden');
+
+            const sig = appState.selectedSignature;
+            if (!sig) return; // Não há assinatura selecionada
+
+            signaturePlanName.textContent = sig.plan.name;
+            signaturePlanPrice.textContent = sig.plan.monthlyPrice.toFixed(2);
+            signaturePlanDescription.textContent = sig.plan.description || 'Nenhuma descrição disponível.';
+            signatureStatus.textContent = sig.isActive ? 'Ativa' : 'Inativa';
+            signatureStatus.className = `font-bold ${sig.isActive ? 'text-green-600' : 'text-red-600'}`;
+            signatureStartDate.textContent = new Date(sig.startDate).toLocaleDateString('pt-BR');
+            signatureEndDate.textContent = new Date(sig.endDate).toLocaleDateString('pt-BR');
+
+            // Renderizar pagamentos
+            paymentsList.innerHTML = '';
+            if (appState.payments.length === 0) {
+                noPaymentsMessage.classList.remove('hidden');
+                return;
+            } else {
+                noPaymentsMessage.classList.add('hidden');
+            }
+
+            appState.payments.forEach(payment => {
+                const li = document.createElement('li');
+                li.className = 'p-4 bg-white rounded-md shadow-sm border border-gray-100 hover:bg-gray-50 cursor-pointer transition duration-200 ease-in-out transform hover:scale-[1.01]';
+                li.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-lg font-semibold text-gray-800">
+                                Pagamento de R$ ${payment.amount.toFixed(2)}
+                            </p>
+                            <p class="text-sm font-medium ${payment.status === 'paid' ? 'text-green-500' : 'text-orange-500'}">
+                                Status: ${payment.status === 'paid' ? 'Pago' : 'Pendente'}
+                            </p>
+                            ${payment.date ? `<p class="text-xs text-gray-500">Data: ${new Date(payment.date).toLocaleDateString('pt-BR')}</p>` : ''}
+                        </div>
+                        ${payment.gatewayChargeId ? `<span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Cobrança Detalhada</span>` : ''}
+                    </div>
+                `;
+                li.addEventListener('click', () => handleSelectPayment(payment));
+                paymentsList.appendChild(li);
+            });
+        }
+
+        /**
+         * Renderiza os detalhes de um pagamento e, se houver, os detalhes da cobrança.
+         */
+        function renderPaymentDetails() {
+            hideAllDashboardSections();
+            paymentDetailsSection.classList.remove('hidden');
+
+            const payment = appState.selectedPayment;
+            if (!payment) return;
+
+            paymentUuid.textContent = payment.uuid;
+            paymentAmount.textContent = payment.amount.toFixed(2);
+            paymentStatus.textContent = payment.status === 'paid' ? 'Pago' : 'Pendente';
+            paymentStatus.className = `font-bold ${payment.status === 'paid' ? 'text-green-600' : 'text-orange-600'}`;
+
+            if (payment.date) {
+                paymentDateRow.classList.remove('hidden');
+                paymentDate.textContent = new Date(payment.date).toLocaleDateString('pt-BR');
+            } else {
+                paymentDateRow.classList.add('hidden');
+            }
+
+            if (payment.gatewayChargeId) {
+                paymentGatewayChargeIdRow.classList.remove('hidden');
+                paymentGatewayChargeId.textContent = payment.gatewayChargeId;
+            } else {
+                paymentGatewayChargeIdRow.classList.add('hidden');
+            }
+
+            // Renderiza detalhes da cobrança se existirem
+            chargeDetailsSection.classList.add('hidden');
+            chargeDetailsContent.innerHTML = '';
+            noChargeDetailsMessage.classList.add('hidden');
+
+            if (appState.chargeDetails) {
+                chargeDetailsSection.classList.remove('hidden');
+                const details = appState.chargeDetails;
+                if (details.bankSlip) {
+                    chargeDetailsContent.innerHTML = `
+                        <p class="text-gray-700 break-words">
+                            <strong class="font-semibold">Código de Barras:</strong> ${details.bankSlip.barCode}
+                        </p>
+                        <p class="text-gray-700">
+                            <strong class="font-semibold">URL do Boleto:</strong>
+                            <a href="${details.bankSlip.bankSlipUrl}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline transition duration-200">
+                                Acessar Boleto
+                            </a>
+                        </p>
+                    `;
+                } else if (!details.bankSlip && !details.pix && !details.creditCard) {
+                    noChargeDetailsMessage.classList.remove('hidden');
+                }
+                // Adicione lógica para PIX e Cartão de Crédito aqui, se sua API retornar dados para eles
+            }
+        }
+
+        /**
+         * Manipula o processo de login do cliente.
+         * Faz uma chamada à API de login e armazena o access_token.
+         * @param {string} cpf - O CPF do cliente para login.
+         */
+        async function handleLogin(cpf) {
+            showLoading(true);
+            showError('');
+            loginButton.disabled = true;
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ cpf: cpf })
+                });
+
+                if (response.ok) { // Status 200 OK
+                    const data = await response.json();
+                    const token = data.accessToken; // Assumindo que a API retorna 'access_token'
+                    if (token) {
+                        appState.token = token;
+                        appState.userCPF = cpf;
+                        localStorage.setItem('authToken', token);
+                        localStorage.setItem('userCPF', cpf);
+                        appState.isLoggedIn = true;
+                        updateUIVisibility();
+                        await fetchSignatures(token);
+                    } else {
+                        showError('Token de acesso não recebido.');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showError(errorData.message || 'Erro ao fazer login. CPF não encontrado ou inválido.');
+                }
+            } catch (err) {
+                showError('Erro de rede ou servidor: ' + err.message);
+            } finally {
+                showLoading(false);
+                loginButton.disabled = false;
+            }
+        }
+
+        /**
+         * Busca as assinaturas do cliente logado.
+         * @param {string} currentToken - O token JWT para autenticação.
+         */
+        async function fetchSignatures(currentToken) {
+            showLoading(true);
+            showError('');
+            try {
+                const response = await fetch(`${BASE_URL}/api/customer/signatures`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appState.signatures = data;
+                    renderSignatures();
+                } else {
+                    const errorData = await response.json();
+                    showError(errorData.message || 'Erro ao buscar assinaturas.');
+                    // Se o erro for 401 (Não autorizado), força o logout
+                    if (response.status === 401) {
+                        handleLogout();
+                    }
+                }
+            } catch (err) {
+                showError('Erro de rede ou servidor: ' + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        /**
+         * Busca os pagamentos de uma assinatura específica.
+         * @param {string} signatureUUID - O UUID da assinatura.
+         */
+        async function fetchPayments(signatureUUID) {
+            showLoading(true);
+            showError('');
+            try {
+                const response = await fetch(`${BASE_URL}/api/customer/signatures/${signatureUUID}/payments`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${appState.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appState.payments = data;
+                    renderSignatureDetails(); // Re-renderiza para mostrar os pagamentos
+                } else {
+                    const errorData = await response.json();
+                    showError(errorData.message || 'Erro ao buscar pagamentos.');
+                    if (response.status === 401 || response.status === 403) { // 401 Unauthorized, 403 Forbidden
+                        handleLogout();
+                    }
+                }
+            } catch (err) {
+                showError('Erro de rede ou servidor: ' + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        /**
+         * Busca os detalhes de uma cobrança específica.
+         * @param {string} chargeId - O ID da cobrança (gatewayChargeId).
+         */
+        async function fetchChargeDetails(chargeId) {
+            showLoading(true);
+            showError('');
+            try {
+                const response = await fetch(`${BASE_URL}/api/customer/signatures/payments/charge/${chargeId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${appState.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appState.chargeDetails = data;
+                    renderPaymentDetails(); // Re-renderiza para mostrar os detalhes da cobrança
+                } else {
+                    const errorData = await response.json();
+                    showError(errorData.message || 'Erro ao buscar detalhes da cobrança.');
+                    if (response.status === 401 || response.status === 403) { // 401 Unauthorized, 403 Forbidden
+                        handleLogout();
+                    }
+                }
+            } catch (err) {
+                showError('Erro de rede ou servidor: ' + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        /**
+         * Lida com a seleção de uma assinatura na lista.
+         * @param {object} signature - O objeto da assinatura selecionada.
+         */
+        async function handleSelectSignature(signature) {
+            appState.selectedSignature = signature;
+            appState.payments = []; // Limpa pagamentos anteriores
+            appState.selectedPayment = null; // Limpa pagamento selecionado
+            appState.chargeDetails = null; // Limpa detalhes de cobrança
+            await fetchPayments(signature.uuid);
+        }
+
+        /**
+         * Lida com a seleção de um pagamento na lista.
+         * @param {object} payment - O objeto do pagamento selecionado.
+         */
+        async function handleSelectPayment(payment) {
+            appState.selectedPayment = payment;
+            appState.chargeDetails = null; // Limpa detalhes de cobrança anteriores
+            if (payment.gatewayChargeId) {
+                await fetchChargeDetails(payment.gatewayChargeId);
+            } else {
+                renderPaymentDetails(); // Renderiza sem detalhes de cobrança se não houver ID
+            }
+        }
+
+        /**
+         * Lida com o processo de logout.
+         */
+        function handleLogout() {
+            appState.isLoggedIn = false;
+            appState.token = '';
+            appState.userCPF = '';
+            appState.signatures = [];
+            appState.selectedSignature = null;
+            appState.payments = [];
+            appState.selectedPayment = null;
+            appState.chargeDetails = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userCPF');
+            updateUIVisibility();
+            cpfInput.value = ''; // Limpa o campo CPF no formulário de login
+            showError(''); // Limpa qualquer erro de login
+        }
+
+        // --- Event Listeners ---
+
+        // Listener para o formulário de login
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            handleLogin(cpfInput.value);
+        });
+
+        // Listener para o botão de logout
+        logoutButton.addEventListener('click', handleLogout);
+
+        // Listener para o botão "Voltar às Assinaturas"
+        backToSignaturesButton.addEventListener('click', () => {
+            appState.selectedSignature = null;
+            appState.payments = [];
+            appState.selectedPayment = null;
+            appState.chargeDetails = null;
+            renderSignatures(); // Volta para a lista de assinaturas
+        });
+
+        // Listener para o botão "Voltar aos Pagamentos"
+        backToPaymentsButton.addEventListener('click', () => {
+            appState.selectedPayment = null;
+            appState.chargeDetails = null;
+            renderSignatureDetails(); // Volta para os pagamentos da assinatura
+        });
+
+        // Listener para o botão "Atualizar Assinaturas" (caso não encontre nenhuma)
+        refreshSignaturesButton.addEventListener('click', () => {
+            fetchSignatures(appState.token);
+        });
+
+        // --- Inicialização da Aplicação ---
+        // Verifica o estado de login ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            if (appState.token && appState.userCPF) {
+                appState.isLoggedIn = true;
+                updateUIVisibility();
+                fetchSignatures(appState.token);
+            } else {
+                updateUIVisibility(); // Garante que a seção de login esteja visível
+            }
+        });
+
+    </script>
+</body>
+</html>
